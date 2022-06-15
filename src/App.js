@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import "./App.css";
 
@@ -40,23 +40,19 @@ function App() {
   //arrow declaration => expensive computation ex: API calls
   const [items, setItems] = useState(() => toDoItems);
 
-  const [firstItems, setFirstItems] = useState("");
+  const [temp, setTemp] = useState(() => toDoItems);
 
   const [filterType, setFilterType] = useState("");
-
   const [itemToSearch, setItemToSearch] = useState("");
 
   const handleChangeItemToSearch = (event) => {
     setItemToSearch(event.target.value);
 
-    const suitableItems = items.filter((item) => item.label.includes(itemToSearch) );
-
-    // setFirstItems(items);
-
+    const suitableItems = temp.filter((item) =>
+      item.label.toLowerCase().includes(event.target.value.toLowerCase())
+    );
     setItems([...suitableItems]);
-
-  }
-  console.log(items);
+  };
 
   const handleChangeItem = (event) => {
     setItemToAdd(event.target.value);
@@ -69,10 +65,12 @@ function App() {
     // setItems(oldItems);
 
     // not mutating !CORRECT!
-    setItems((prevItems) => [
+    setItems((nextItems) => [
       { label: itemToAdd, key: uuidv4() },
-      ...prevItems,
+      ...nextItems,
     ]);
+
+    setTemp((nextItems) => [{ label: itemToAdd, key: uuidv4() }, ...nextItems]);
 
     setItemToAdd("");
   };
@@ -102,25 +100,26 @@ function App() {
     // );
   };
 
-  const handleItemDelete = ({key}) => {
+  const handleItemDelete = ({ key }) => {
     const itemIndex = items.findIndex((item) => item.key === key);
     const leftSideOfAnArray = items.slice(0, itemIndex);
     const rightSideOfAnArray = items.slice(itemIndex + 1, items.length);
     setItems([...leftSideOfAnArray, ...rightSideOfAnArray]);
-  }
+    setTemp([...leftSideOfAnArray, ...rightSideOfAnArray]);
+  };
 
   const handleFilterItems = (type) => {
     setFilterType(type);
   };
 
-  const handleItemImportant = ({key}) => {
+  const handleItemImportant = ({ key }) => {
     const itemIndex = items.findIndex((item) => item.key === key);
     const oldItem = items[itemIndex];
     const newItem = { ...oldItem, important: !oldItem.important };
     const leftSideOfAnArray = items.slice(0, itemIndex);
     const rightSideOfAnArray = items.slice(itemIndex + 1, items.length);
     setItems([...leftSideOfAnArray, newItem, ...rightSideOfAnArray]);
-  }
+  };
 
   const amountDone = items.filter((item) => item.done).length;
 
@@ -149,8 +148,8 @@ function App() {
           type="text"
           className="form-control search-input"
           placeholder="type to search"
-          value = {itemToSearch}
-          onChange = {handleChangeItemToSearch}
+          value={itemToSearch}
+          onChange={handleChangeItemToSearch}
         />
         {/* Item-status-filter */}
         <div className="btn-group">
@@ -174,7 +173,11 @@ function App() {
         {filteredItems.length > 0 &&
           filteredItems.map((item) => (
             <li key={item.key} className="list-group-item">
-              <span className={`todo-list-item${item.done ? " done" : ""} todo-list-item${item.important ? " important" : ""}`}>
+              <span
+                className={`todo-list-item${
+                  item.done ? " done" : ""
+                } todo-list-item${item.important ? " important" : ""}`}
+              >
                 <span
                   className="todo-list-item-label"
                   onClick={() => handleItemDone(item)}
